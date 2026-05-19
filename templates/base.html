@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}KriptoCipher{% endblock %} — Simulasi Kriptografi Klasik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <i class="fa-solid fa-lock-keyhole"></i>
+    </div>
+    <div>
+      <div class="logo-title">KriptoCipher</div>
+      <div class="logo-sub">Simulasi Kriptografi Klasik</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Beranda</div>
+    <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+      <i class="fa-solid fa-house-chimney"></i><span>Dashboard</span>
+    </a>
+
+    <div class="nav-section-label">Algoritma</div>
+    <a href="{{ url_for('caesar_page') }}" class="nav-item {% if request.endpoint == 'caesar_page' %}active{% endif %}">
+      <i class="fa-solid fa-rotate-right"></i><span>Caesar Cipher</span>
+    </a>
+    <a href="{{ url_for('vigenere_page') }}" class="nav-item {% if request.endpoint == 'vigenere_page' %}active{% endif %}">
+      <i class="fa-solid fa-table-cells"></i><span>Vigenère Cipher</span>
+    </a>
+    <a href="{{ url_for('affine_page') }}" class="nav-item {% if request.endpoint == 'affine_page' %}active{% endif %}">
+      <i class="fa-solid fa-function"></i><span>Affine Cipher</span>
+    </a>
+    <a href="{{ url_for('hill_page') }}" class="nav-item {% if request.endpoint == 'hill_page' %}active{% endif %}">
+      <i class="fa-solid fa-border-all"></i><span>Hill Cipher</span>
+    </a>
+    <a href="{{ url_for('playfair_page') }}" class="nav-item {% if request.endpoint == 'playfair_page' %}active{% endif %}">
+      <i class="fa-solid fa-chess-board"></i><span>Playfair Cipher</span>
+    </a>
+
+    <div class="nav-section-label">Lainnya</div>
+    <a href="{{ url_for('history_page') }}" class="nav-item {% if request.endpoint == 'history_page' %}active{% endif %}">
+      <i class="fa-solid fa-clock-rotate-left"></i><span>Riwayat</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">
+      <i class="fa-solid fa-moon" id="themeIcon"></i>
+      <span id="themeLabel">Dark Mode</span>
+    </button>
+  </div>
+</aside>
+
+<!-- ── Topbar (mobile) ───────────────────────────────────────────────────── -->
+<div class="topbar">
+  <button class="menu-toggle" id="menuToggle">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+  <div class="topbar-title">
+    <i class="fa-solid fa-lock-keyhole"></i> KriptoCipher
+  </div>
+  <button class="theme-toggle-mobile" id="themeToggleMobile">
+    <i class="fa-solid fa-moon" id="themeIconMobile"></i>
+  </button>
+</div>
+
+<!-- ── Main Content ──────────────────────────────────────────────────────── -->
+<main class="main-content" id="mainContent">
+  <div class="page-wrapper">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+<!-- ── Overlay (mobile) ──────────────────────────────────────────────────── -->
+<div class="overlay" id="overlay"></div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

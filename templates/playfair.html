@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Playfair Cipher{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="badge"><i class="fa-solid fa-chess-board"></i> Playfair Cipher</div>
+  <h1>Playfair Cipher</h1>
+  <p>Enkripsi bigram (pasangan huruf) menggunakan matriks 5×5 yang dibentuk dari kata kunci. Huruf J digantikan oleh I.</p>
+  <div class="formula-badge">
+    <i class="fa-solid fa-square-root-variable"></i>
+    3 Aturan: Baris sama → geser kanan | Kolom sama → geser bawah | Persegi panjang → tukar kolom
+  </div>
+</div>
+
+<div id="pfApp">
+  <div class="card">
+    <div class="mode-tabs" id="pfTabs">
+      <button class="mode-tab active" data-mode="encrypt">
+        <i class="fa-solid fa-lock"></i> Enkripsi
+      </button>
+      <button class="mode-tab" data-mode="decrypt">
+        <i class="fa-solid fa-lock-open"></i> Dekripsi
+      </button>
+    </div>
+
+    <div class="formula-box">
+      <strong>Aturan Playfair:</strong><br>
+      1. Baris sama → geser kanan (enkripsi) / geser kiri (dekripsi)<br>
+      2. Kolom sama → geser bawah (enkripsi) / geser atas (dekripsi)<br>
+      3. Persegi panjang → tukar kolom (sama untuk keduanya)<br>
+      <span style="color:var(--text-3);font-size:11px;">J diganti I. Padding 'X' untuk huruf ganda atau teks ganjil.</span>
+    </div>
+
+    <div class="two-col">
+      <div class="form-group">
+        <label class="form-label">Teks Input</label>
+        <textarea id="pfText" class="form-control mono" placeholder="Masukkan teks di sini..." rows="4"></textarea>
+        <div class="form-hint">Huruf J otomatis diganti I. Spasi & tanda baca diabaikan.</div>
+      </div>
+      <div>
+        <div class="form-group">
+          <label class="form-label">Kata Kunci</label>
+          <input type="text" id="pfKey" class="form-control mono" placeholder="Contoh: MONARCHY" />
+          <div class="form-hint">Kata kunci digunakan untuk menyusun matriks 5×5</div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px;">
+          <button class="btn btn-primary" onclick="runPlayfair()">
+            <i class="fa-solid fa-play"></i> Jalankan
+          </button>
+          <button class="btn btn-outline" onclick="clearPF()">
+            <i class="fa-solid fa-trash"></i> Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading"><div class="spinner"></div> Memproses...</div>
+    <div class="error-box"></div>
+
+    <div class="result-box" id="pfResultBox">
+      <div class="result-label"><i class="fa-solid fa-star"></i> Hasil</div>
+      <div class="result-text" id="pfResult">—</div>
+      <button class="btn btn-outline btn-sm copy-btn" onclick="copyText('pfResult', this)">
+        <i class="fa-solid fa-copy"></i> Salin Hasil
+      </button>
+    </div>
+  </div>
+
+  <!-- 5x5 Matrix -->
+  <div class="card steps-container" id="pfMatrixCard">
+    <div class="card-title"><i class="fa-solid fa-chess-board"></i> Matriks Playfair 5×5</div>
+    <div style="overflow-x:auto">
+      <div class="playfair-matrix" id="pfMatrix"></div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-3)">
+      <i class="fa-solid fa-lightbulb" style="color:var(--accent-3)"></i>
+      Hover pada sel untuk melihat posisinya. J digabung dengan I.
+    </div>
+  </div>
+
+  <!-- Pairs -->
+  <div class="card steps-container" id="pfPairsCard">
+    <div class="card-title"><i class="fa-solid fa-arrows-split-up-and-left"></i> Pasangan Huruf (Bigram)</div>
+    <div id="pfPairsDisplay" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;"></div>
+
+    <div class="card-title" style="margin-top:4px"><i class="fa-solid fa-list-ol"></i> Langkah Enkripsi/Dekripsi</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Pasangan Input</th>
+            <th>Posisi A</th>
+            <th>Posisi B</th>
+            <th>Aturan</th>
+            <th>Hasil</th>
+          </tr>
+        </thead>
+        <tbody id="pfStepsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  initModeTabs('pfTabs');
+
+  function renderPlayfairMatrix(matrix, highlightChars = []) {
+    const el = document.getElementById('pfMatrix');
+    el.innerHTML = '';
+    matrix.forEach((row, r) => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'playfair-row';
+      row.forEach((ch, c) => {
+        const cell = document.createElement('div');
+        cell.className = 'playfair-cell' + (highlightChars.includes(ch) ? ' highlight' : '');
+        cell.textContent = ch;
+        cell.title = `(${r+1}, ${c+1})`;
+        rowEl.appendChild(cell);
+      });
+      el.appendChild(rowEl);
+    });
+  }
+
+  async function runPlayfair() {
+    const container = document.getElementById('pfApp');
+    const text = document.getElementById('pfText').value.trim();
+    const key = document.getElementById('pfKey').value.trim();
+    const mode = getActiveMode('pfTabs');
+
+    hideError(container);
+    if (!text) { showError(container, 'Teks tidak boleh kosong.'); return; }
+    if (!key) { showError(container, 'Kata kunci tidak boleh kosong.'); return; }
+
+    showLoading(container);
+    const data = await callApi('/api/playfair', { text, key, mode });
+    hideLoading(container);
+
+    if (data.error) { showError(container, data.error); return; }
+
+    document.getElementById('pfResult').textContent = data.result;
+    document.getElementById('pfResultBox').classList.add('show');
+
+    renderPlayfairMatrix(data.matrix);
+    document.getElementById('pfMatrixCard').classList.add('show');
+
+    // Pairs display
+    const pairsEl = document.getElementById('pfPairsDisplay');
+    pairsEl.innerHTML = '';
+    data.pairs.forEach(p => {
+      const span = document.createElement('span');
+      span.style.cssText = 'font-family:var(--font-mono);font-size:15px;font-weight:700;padding:6px 12px;background:var(--bg-4);border:1px solid var(--border);border-radius:6px;color:var(--accent);';
+      span.textContent = p;
+      pairsEl.appendChild(span);
+    });
+
+    // Steps table
+    const tbody = document.getElementById('pfStepsBody');
+    tbody.innerHTML = '';
+    data.steps.forEach((s, i) => {
+      const tr = document.createElement('tr');
+      const ruleColor = s.rule.includes('Baris') ? 'var(--accent)' : s.rule.includes('Kolom') ? 'var(--accent-3)' : 'var(--accent-5)';
+      tr.innerHTML = `
+        <td><span class="row-num">${i+1}</span></td>
+        <td class="mono accent">${s.pair}</td>
+        <td class="mono" style="color:var(--text-3)">${s.pos_a}</td>
+        <td class="mono" style="color:var(--text-3)">${s.pos_b}</td>
+        <td style="font-size:12px;color:${ruleColor};font-weight:600">${s.rule}</td>
+        <td class="mono success">${s.result}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('pfPairsCard').classList.add('show');
+    animateRows('pfStepsBody');
+  }
+
+  function clearPF() {
+    document.getElementById('pfText').value = '';
+    document.getElementById('pfKey').value = '';
+    document.getElementById('pfResult').textContent = '—';
+    document.getElementById('pfResultBox').classList.remove('show');
+    document.getElementById('pfMatrixCard').classList.remove('show');
+    document.getElementById('pfPairsCard').classList.remove('show');
+    document.getElementById('pfMatrix').innerHTML = '';
+    document.getElementById('pfPairsDisplay').innerHTML = '';
+    document.getElementById('pfStepsBody').innerHTML = '';
+    hideError(document.getElementById('pfApp'));
+  }
+</script>
+{% endblock %}

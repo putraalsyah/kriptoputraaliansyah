@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% block title %}Hill Cipher{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="badge"><i class="fa-solid fa-border-all"></i> Hill Cipher</div>
+  <h1>Hill Cipher</h1>
+  <p>Kriptografi berbasis aljabar linear — plaintext dienkripsi dengan perkalian matriks kunci modulo 26.</p>
+  <div class="formula-badge">
+    <i class="fa-solid fa-square-root-variable"></i>
+    Enkripsi: C = K × P mod 26 &nbsp;|&nbsp; Dekripsi: P = K⁻¹ × C mod 26
+  </div>
+</div>
+
+<div id="hillApp">
+  <div class="card">
+    <div class="mode-tabs" id="hillTabs">
+      <button class="mode-tab active" data-mode="encrypt">
+        <i class="fa-solid fa-lock"></i> Enkripsi
+      </button>
+      <button class="mode-tab" data-mode="decrypt">
+        <i class="fa-solid fa-lock-open"></i> Dekripsi
+      </button>
+    </div>
+
+    <div class="formula-box">
+      Enkripsi: C = K × P (mod 26)<br>
+      Dekripsi: P = K⁻¹ × C (mod 26)<br>
+      <span style="color:var(--text-3);font-size:11px;">K = matriks kunci n×n, P = vektor plaintext, det(K) harus relatif prima dengan 26. Padding: 'X'</span>
+    </div>
+
+    <div class="two-col">
+      <div class="form-group">
+        <label class="form-label">Teks Input</label>
+        <textarea id="hillText" class="form-control mono" placeholder="Masukkan teks di sini..." rows="4"></textarea>
+        <div class="form-hint">Spasi dan tanda baca akan diabaikan. Jika kurang dari blok n, padding 'X' ditambahkan.</div>
+      </div>
+
+      <div>
+        <div class="form-group">
+          <label class="form-label">Ukuran Matriks</label>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-outline" id="btnSize2" onclick="setMatrixSize(2)" style="flex:1">2×2</button>
+            <button class="btn btn-outline" id="btnSize3" onclick="setMatrixSize(3)" style="flex:1">3×3</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Matriks Kunci K</label>
+          <div id="matrixInputContainer"></div>
+          <div class="form-hint">Gunakan matriks yang det(K) relatif prima dengan 26</div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:4px;">
+          <button class="btn btn-primary" onclick="runHill()">
+            <i class="fa-solid fa-play"></i> Jalankan
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="fillSample()">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Contoh
+          </button>
+          <button class="btn btn-outline" onclick="clearHill()">
+            <i class="fa-solid fa-trash"></i> Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading"><div class="spinner"></div> Memproses...</div>
+    <div class="error-box"></div>
+
+    <div class="result-box" id="hillResultBox">
+      <div class="result-label"><i class="fa-solid fa-star"></i> Hasil</div>
+      <div class="result-text" id="hillResult">—</div>
+      <button class="btn btn-outline btn-sm copy-btn" onclick="copyText('hillResult', this)">
+        <i class="fa-solid fa-copy"></i> Salin Hasil
+      </button>
+    </div>
+  </div>
+
+  <!-- Matrix visualization -->
+  <div class="card steps-container" id="hillMatrixViz" style="display:none">
+    <div class="card-title"><i class="fa-solid fa-border-all"></i> Visualisasi Matriks</div>
+    <div style="display:flex;gap:32px;align-items:center;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Matriks Kunci K</div>
+        <div class="matrix-display" id="hillKeyMatrix"></div>
+      </div>
+      <div id="hillInvMatrixSection" style="display:none">
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Matriks Invers K⁻¹</div>
+        <div class="matrix-display" id="hillInvMatrix"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="card steps-container" id="hillSteps">
+    <div class="card-title"><i class="fa-solid fa-list-ol"></i> Langkah Perhitungan Blok</div>
+    <div id="hillStepsBody"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let matrixSize = 2;
+  initModeTabs('hillTabs');
+  setMatrixSize(2);
+
+  function setMatrixSize(n) {
+    matrixSize = n;
+    document.getElementById('btnSize2').className = n === 2 ? 'btn btn-primary' : 'btn btn-outline';
+    document.getElementById('btnSize3').className = n === 3 ? 'btn btn-primary' : 'btn btn-outline';
+    renderMatrixInput(n);
+  }
+
+  function renderMatrixInput(n) {
+    const samples2 = [[3,3],[2,5]];
+    const samples3 = [[1,2,3],[0,1,4],[5,6,0]];
+    const sample = n === 2 ? samples2 : samples3;
+    let html = '<div class="matrix-input-grid">';
+    for (let r = 0; r < n; r++) {
+      html += '<div class="matrix-input-row">';
+      for (let c = 0; c < n; c++) {
+        html += `<input type="number" class="form-control mono matrix-input-cell" id="m${r}_${c}" value="${sample[r][c]}" min="0" max="25"/>`;
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+    document.getElementById('matrixInputContainer').innerHTML = html;
+  }
+
+  function getMatrix() {
+    const m = [];
+    for (let r = 0; r < matrixSize; r++) {
+      const row = [];
+      for (let c = 0; c < matrixSize; c++) {
+        row.push(parseInt(document.getElementById(`m${r}_${c}`).value) || 0);
+      }
+      m.push(row);
+    }
+    return m;
+  }
+
+  function fillSample() {
+    if (matrixSize === 2) {
+      const v = [[6,24],[1,13]];
+      for (let r=0;r<2;r++) for (let c=0;c<2;c++) document.getElementById(`m${r}_${c}`).value = v[r][c];
+    } else {
+      const v = [[6,24,1],[13,16,10],[20,17,15]];
+      for (let r=0;r<3;r++) for (let c=0;c<3;c++) document.getElementById(`m${r}_${c}`).value = v[r][c];
+    }
+    if (!document.getElementById('hillText').value)
+      document.getElementById('hillText').value = 'ACT';
+  }
+
+  function renderMatrix(containerId, matrix) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    matrix.forEach(row => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'matrix-row';
+      row.forEach(val => {
+        const cell = document.createElement('div');
+        cell.className = 'matrix-cell';
+        cell.textContent = val;
+        rowEl.appendChild(cell);
+      });
+      el.appendChild(rowEl);
+    });
+  }
+
+  async function runHill() {
+    const container = document.getElementById('hillApp');
+    const text = document.getElementById('hillText').value.trim();
+    const matrix = getMatrix();
+    const mode = getActiveMode('hillTabs');
+
+    hideError(container);
+    if (!text) { showError(container, 'Teks tidak boleh kosong.'); return; }
+
+    showLoading(container);
+    const data = await callApi('/api/hill', { text, matrix, mode });
+    hideLoading(container);
+
+    if (data.error) { showError(container, data.error); return; }
+
+    document.getElementById('hillResult').textContent = data.result;
+    document.getElementById('hillResultBox').classList.add('show');
+
+    // Matrix visualization
+    document.getElementById('hillMatrixViz').style.display = 'block';
+    renderMatrix('hillKeyMatrix', matrix);
+    if (data.inv_key) {
+      renderMatrix('hillInvMatrix', data.inv_key);
+      document.getElementById('hillInvMatrixSection').style.display = 'block';
+    } else {
+      document.getElementById('hillInvMatrixSection').style.display = 'none';
+    }
+
+    // Steps
+    const stepsBody = document.getElementById('hillStepsBody');
+    stepsBody.innerHTML = '';
+    data.steps.forEach((block, i) => {
+      const div = document.createElement('div');
+      div.style.cssText = 'margin-bottom:20px;padding:16px;background:var(--bg-3);border-radius:8px;border:1px solid var(--border);animation:fadeUp 0.4s ease both;';
+      div.style.animationDelay = `${i * 0.08}s`;
+      div.innerHTML = `
+        <div style="font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">
+          Blok ${i+1}: <span style="font-family:var(--font-mono);color:var(--accent)">${block.block_text}</span>
+          → Vektor: [${block.block_nums.join(', ')}]
+        </div>
+        ${block.calc_detail.map(d => `
+          <div style="font-family:var(--font-mono);font-size:12.5px;color:var(--text-2);padding:4px 0;border-bottom:1px solid var(--border)">
+            ${d}
+          </div>
+        `).join('')}
+        <div style="margin-top:10px;font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--success)">
+          Hasil Blok: ${block.result_chars.join('')} [${block.result_nums.join(', ')}]
+        </div>
+      `;
+      stepsBody.appendChild(div);
+    });
+    document.getElementById('hillSteps').classList.add('show');
+  }
+
+  function clearHill() {
+    document.getElementById('hillText').value = '';
+    document.getElementById('hillResult').textContent = '—';
+    document.getElementById('hillResultBox').classList.remove('show');
+    document.getElementById('hillSteps').classList.remove('show');
+    document.getElementById('hillStepsBody').innerHTML = '';
+    document.getElementById('hillMatrixViz').style.display = 'none';
+    hideError(document.getElementById('hillApp'));
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="badge"><i class="fa-solid fa-shield-halved"></i> Kriptografi Klasik</div>
+  <h1>Simulasi Kriptografi<br>Klasik Interaktif</h1>
+  <p>Platform edukatif untuk memahami cara kerja lima algoritma kriptografi klasik dengan tampilan langkah demi langkah yang transparan.</p>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-item" style="animation-delay:0s">
+    <div class="stat-val">5</div>
+    <div class="stat-label">Algoritma Tersedia</div>
+  </div>
+  <div class="stat-item" style="animation-delay:0.07s">
+    <div class="stat-val">26</div>
+    <div class="stat-label">Huruf Alfabet</div>
+  </div>
+  <div class="stat-item" style="animation-delay:0.14s">
+    <div class="stat-val">∞</div>
+    <div class="stat-label">Simulasi Real-time</div>
+  </div>
+  <div class="stat-item" style="animation-delay:0.21s">
+    <div class="stat-val">2</div>
+    <div class="stat-label">Mode Tampilan</div>
+  </div>
+</div>
+
+<div class="card" style="animation-delay:0.1s">
+  <div class="card-title"><i class="fa-solid fa-grid-2"></i> Pilih Algoritma</div>
+  <div class="cipher-grid">
+    <a href="{{ url_for('caesar_page') }}" class="cipher-card" style="--c1:#63b3ed;--c2:#4fd1c5">
+      <div class="icon"><i class="fa-solid fa-rotate-right"></i></div>
+      <h3>Caesar Cipher</h3>
+      <p>Substitusi sederhana dengan pergeseran huruf tetap pada alfabet.</p>
+      <span class="tag">Substitusi</span>
+    </a>
+    <a href="{{ url_for('vigenere_page') }}" class="cipher-card" style="--c1:#9f7aea;--c2:#ed64a6">
+      <div class="icon"><i class="fa-solid fa-table-cells"></i></div>
+      <h3>Vigenère Cipher</h3>
+      <p>Caesar cipher berulang menggunakan kata kunci sebagai kunci multi-karakter.</p>
+      <span class="tag">Polialfabetik</span>
+    </a>
+    <a href="{{ url_for('affine_page') }}" class="cipher-card" style="--c1:#f6ad55;--c2:#fc8181">
+      <div class="icon"><i class="fa-solid fa-function"></i></div>
+      <h3>Affine Cipher</h3>
+      <p>Enkripsi berbasis fungsi matematika linear dengan dua parameter kunci.</p>
+      <span class="tag">Matematika</span>
+    </a>
+    <a href="{{ url_for('hill_page') }}" class="cipher-card" style="--c1:#68d391;--c2:#4fd1c5">
+      <div class="icon"><i class="fa-solid fa-border-all"></i></div>
+      <h3>Hill Cipher</h3>
+      <p>Enkripsi matriks menggunakan aljabar linear dan perkalian matriks modular.</p>
+      <span class="tag">Aljabar Linear</span>
+    </a>
+    <a href="{{ url_for('playfair_page') }}" class="cipher-card" style="--c1:#fc8181;--c2:#f6ad55">
+      <div class="icon"><i class="fa-solid fa-chess-board"></i></div>
+      <h3>Playfair Cipher</h3>
+      <p>Enkripsi bigram dengan matriks kunci 5×5 dan tiga aturan penggantian.</p>
+      <span class="tag">Bigram</span>
+    </a>
+  </div>
+</div>
+
+<div class="card" style="animation-delay:0.2s">
+  <div class="card-title"><i class="fa-solid fa-circle-info"></i> Tentang Aplikasi</div>
+  <p style="color:var(--text-2);font-size:14px;line-height:1.8;">
+    Aplikasi ini dibuat sebagai <strong style="color:var(--text)">Tugas 1 Kriptografi Semester 6 TA 2025/2026</strong> untuk mensimulasikan lima algoritma kriptografi klasik secara interaktif dan edukatif. Setiap algoritma menampilkan proses enkripsi dan dekripsi secara detail beserta rumus matematisnya.
+  </p>
+  <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;">
+    <span style="font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-check" style="color:var(--success)"></i> Langkah demi langkah</span>
+    <span style="font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-check" style="color:var(--success)"></i> Visualisasi matriks</span>
+    <span style="font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-check" style="color:var(--success)"></i> Riwayat enkripsi</span>
+    <span style="font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-check" style="color:var(--success)"></i> Dark / Light Mode</span>
+    <span style="font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-check" style="color:var(--success)"></i> Mobile Friendly</span>
+  </div>
+</div>
+{% endblock %}

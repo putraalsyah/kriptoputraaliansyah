@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}Caesar Cipher{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="badge" style="--c1:#63b3ed"><i class="fa-solid fa-rotate-right"></i> Caesar Cipher</div>
+  <h1>Caesar Cipher</h1>
+  <p>Salah satu teknik enkripsi tertua — setiap huruf digeser sejauh <em>n</em> posisi dalam alfabet.</p>
+  <div class="formula-badge">
+    <i class="fa-solid fa-square-root-variable"></i>
+    Enkripsi: C = (P + K) mod 26 &nbsp;|&nbsp; Dekripsi: P = (C − K + 26) mod 26
+  </div>
+</div>
+
+<div id="caesarApp">
+  <div class="card">
+    <div class="mode-tabs" id="caesarTabs">
+      <button class="mode-tab active" data-mode="encrypt">
+        <i class="fa-solid fa-lock"></i> Enkripsi
+      </button>
+      <button class="mode-tab" data-mode="decrypt">
+        <i class="fa-solid fa-lock-open"></i> Dekripsi
+      </button>
+    </div>
+
+    <div class="formula-box">
+      Enkripsi: C = (P + K) mod 26<br>
+      Dekripsi: P = (C − K + 26) mod 26<br>
+      <span style="color:var(--text-3);font-size:11px;">P = posisi huruf plaintext (A=0…Z=25), K = shift key, C = posisi huruf ciphertext</span>
+    </div>
+
+    <div class="two-col">
+      <div class="form-group">
+        <label class="form-label">Teks Input</label>
+        <textarea id="caesarText" class="form-control mono" placeholder="Masukkan teks di sini..." rows="4"></textarea>
+      </div>
+      <div>
+        <div class="form-group">
+          <label class="form-label">Shift / Kunci (1–25)</label>
+          <input type="number" id="caesarShift" class="form-control mono" value="3" min="1" max="25"/>
+          <div class="form-hint">Geser huruf sejauh nilai ini dalam alfabet</div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px;">
+          <button class="btn btn-primary" onclick="runCaesar()">
+            <i class="fa-solid fa-play"></i> Jalankan
+          </button>
+          <button class="btn btn-outline" onclick="clearCaesar()">
+            <i class="fa-solid fa-trash"></i> Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading"><div class="spinner"></div> Memproses...</div>
+    <div class="error-box"></div>
+
+    <div class="result-box" id="caesarResultBox">
+      <div class="result-label"><i class="fa-solid fa-star"></i> Hasil</div>
+      <div class="result-text" id="caesarResult">—</div>
+      <button class="btn btn-outline btn-sm copy-btn" onclick="copyText('caesarResult', this)">
+        <i class="fa-solid fa-copy"></i> Salin Hasil
+      </button>
+    </div>
+  </div>
+
+  <div class="card steps-container" id="caesarSteps">
+    <div class="card-title"><i class="fa-solid fa-list-ol"></i> Langkah Perhitungan</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Huruf Input</th>
+            <th>Nilai P/C</th>
+            <th>Rumus</th>
+            <th>Hasil</th>
+          </tr>
+        </thead>
+        <tbody id="caesarStepsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  initModeTabs('caesarTabs');
+
+  async function runCaesar() {
+    const container = document.getElementById('caesarApp');
+    const text = document.getElementById('caesarText').value.trim();
+    const shift = parseInt(document.getElementById('caesarShift').value) || 3;
+    const mode = getActiveMode('caesarTabs');
+
+    hideError(container);
+    if (!text) { showError(container, 'Teks tidak boleh kosong.'); return; }
+    if (shift < 1 || shift > 25) { showError(container, 'Shift harus antara 1 dan 25.'); return; }
+
+    showLoading(container);
+    const data = await callApi('/api/caesar', { text, shift, mode });
+    hideLoading(container);
+
+    if (data.error) { showError(container, data.error); return; }
+
+    document.getElementById('caesarResult').textContent = data.result;
+    document.getElementById('caesarResultBox').classList.add('show');
+
+    const tbody = document.getElementById('caesarStepsBody');
+    tbody.innerHTML = '';
+    data.steps.forEach((s, i) => {
+      const valKey = mode === 'encrypt' ? 'p_val' : 'c_val';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="row-num">${i+1}</span></td>
+        <td class="mono accent">${s.char}</td>
+        <td class="mono">${s[valKey]}</td>
+        <td class="mono" style="color:var(--text-2)">${s.formula}</td>
+        <td class="mono success">${s.result}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('caesarSteps').classList.add('show');
+    animateRows('caesarStepsBody');
+  }
+
+  function clearCaesar() {
+    document.getElementById('caesarText').value = '';
+    document.getElementById('caesarResult').textContent = '—';
+    document.getElementById('caesarResultBox').classList.remove('show');
+    document.getElementById('caesarSteps').classList.remove('show');
+    document.getElementById('caesarStepsBody').innerHTML = '';
+    hideError(document.getElementById('caesarApp'));
+  }
+</script>
+{% endblock %}

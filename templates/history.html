@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Riwayat{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="badge"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat</div>
+  <h1>Riwayat Enkripsi / Dekripsi</h1>
+  <p>Rekam jejak semua operasi kriptografi yang telah dilakukan dalam sesi ini.</p>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+  <div style="font-size:13px;color:var(--text-2)">
+    <i class="fa-solid fa-database"></i>
+    Total: <strong style="color:var(--text)">{{ history|length }}</strong> entri
+  </div>
+  {% if history %}
+  <button class="btn btn-danger btn-sm" onclick="clearHistory()">
+    <i class="fa-solid fa-trash"></i> Hapus Semua
+  </button>
+  {% endif %}
+</div>
+
+{% if not history %}
+<div class="card" style="text-align:center;padding:48px 24px">
+  <div style="font-size:48px;margin-bottom:16px;opacity:0.3">🔐</div>
+  <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text-2)">Belum ada riwayat</div>
+  <div style="font-size:13px;color:var(--text-3);margin-top:8px">Mulai menggunakan algoritma kriptografi untuk melihat riwayat di sini.</div>
+  <a href="{{ url_for('index') }}" class="btn btn-primary" style="margin-top:20px">
+    <i class="fa-solid fa-play"></i> Mulai Sekarang
+  </a>
+</div>
+{% else %}
+{% for item in history %}
+<div class="history-item" style="animation-delay:{{ loop.index0 * 0.05 }}s">
+  <div>
+    <div class="hist-cipher">{{ item.cipher }}</div>
+    <div style="margin-top:6px;font-size:11px;font-weight:700;text-align:center;"
+      class="{{ 'hist-mode-enc' if item.mode == 'encrypt' else 'hist-mode-dec' }}">
+      {{ '🔒 ENC' if item.mode == 'encrypt' else '🔓 DEC' }}
+    </div>
+  </div>
+  <div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <span style="font-size:11px;color:var(--text-3);font-weight:700;text-transform:uppercase">Input:</span>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--text)">{{ item.input }}</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <span style="font-size:11px;color:var(--text-3);font-weight:700;text-transform:uppercase">Kunci:</span>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-3)">{{ item.key }}</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:11px;color:var(--text-3);font-weight:700;text-transform:uppercase">Output:</span>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--success)">{{ item.output }}</span>
+    </div>
+  </div>
+  <div class="hist-time">
+    <i class="fa-regular fa-clock"></i>
+    {{ item.timestamp }}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  async function clearHistory() {
+    if (!confirm('Hapus semua riwayat?')) return;
+    await fetch('/api/clear-history', { method: 'POST' });
+    location.reload();
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}Vigenère Cipher{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="badge"><i class="fa-solid fa-table-cells"></i> Vigenère Cipher</div>
+  <h1>Vigenère Cipher</h1>
+  <p>Ekstensi Caesar Cipher menggunakan kata kunci yang diulang — setiap huruf digeser berdasarkan huruf kunci yang bersesuaian.</p>
+  <div class="formula-badge">
+    <i class="fa-solid fa-square-root-variable"></i>
+    Enkripsi: Cᵢ = (Pᵢ + Kᵢ) mod 26 &nbsp;|&nbsp; Dekripsi: Pᵢ = (Cᵢ − Kᵢ + 26) mod 26
+  </div>
+</div>
+
+<div id="vigApp">
+  <div class="card">
+    <div class="mode-tabs" id="vigTabs">
+      <button class="mode-tab active" data-mode="encrypt">
+        <i class="fa-solid fa-lock"></i> Enkripsi
+      </button>
+      <button class="mode-tab" data-mode="decrypt">
+        <i class="fa-solid fa-lock-open"></i> Dekripsi
+      </button>
+    </div>
+
+    <div class="formula-box">
+      Enkripsi: Cᵢ = (Pᵢ + Kᵢ) mod 26<br>
+      Dekripsi: Pᵢ = (Cᵢ − Kᵢ + 26) mod 26<br>
+      <span style="color:var(--text-3);font-size:11px;">Kᵢ = posisi huruf ke-i dalam kunci (diulang). Contoh kunci: KUNCI</span>
+    </div>
+
+    <div class="two-col">
+      <div class="form-group">
+        <label class="form-label">Teks Input</label>
+        <textarea id="vigText" class="form-control mono" placeholder="Masukkan teks di sini..." rows="4"></textarea>
+      </div>
+      <div>
+        <div class="form-group">
+          <label class="form-label">Kata Kunci</label>
+          <input type="text" id="vigKey" class="form-control mono" placeholder="Contoh: SECRET" />
+          <div class="form-hint">Hanya huruf yang dihitung; kunci diulang sesuai panjang teks</div>
+        </div>
+        <div style="margin-top: 4px; padding: 8px 12px; background: var(--bg-3); border-radius: 8px; display: none;" id="vigKeyDisplay">
+          <span style="font-size:11px;color:var(--text-3)">Kunci yang digunakan: </span>
+          <span id="vigKeyClean" style="font-family:var(--font-mono);font-size:13px;color:var(--accent);font-weight:700;"></span>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px;">
+          <button class="btn btn-primary" onclick="runVigenere()">
+            <i class="fa-solid fa-play"></i> Jalankan
+          </button>
+          <button class="btn btn-outline" onclick="clearVig()">
+            <i class="fa-solid fa-trash"></i> Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading"><div class="spinner"></div> Memproses...</div>
+    <div class="error-box"></div>
+
+    <div class="result-box" id="vigResultBox">
+      <div class="result-label"><i class="fa-solid fa-star"></i> Hasil</div>
+      <div class="result-text" id="vigResult">—</div>
+      <button class="btn btn-outline btn-sm copy-btn" onclick="copyText('vigResult', this)">
+        <i class="fa-solid fa-copy"></i> Salin Hasil
+      </button>
+    </div>
+  </div>
+
+  <div class="card steps-container" id="vigSteps">
+    <div class="card-title"><i class="fa-solid fa-list-ol"></i> Langkah Perhitungan</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Huruf Input</th>
+            <th>Huruf Kunci</th>
+            <th>Nilai P/C</th>
+            <th>Nilai Kunci</th>
+            <th>Rumus</th>
+            <th>Hasil</th>
+          </tr>
+        </thead>
+        <tbody id="vigStepsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  initModeTabs('vigTabs');
+
+  async function runVigenere() {
+    const container = document.getElementById('vigApp');
+    const text = document.getElementById('vigText').value.trim();
+    const key = document.getElementById('vigKey').value.trim();
+    const mode = getActiveMode('vigTabs');
+
+    hideError(container);
+    if (!text) { showError(container, 'Teks tidak boleh kosong.'); return; }
+    if (!key) { showError(container, 'Kata kunci tidak boleh kosong.'); return; }
+
+    showLoading(container);
+    const data = await callApi('/api/vigenere', { text, key, mode });
+    hideLoading(container);
+
+    if (data.error) { showError(container, data.error); return; }
+
+    document.getElementById('vigResult').textContent = data.result;
+    document.getElementById('vigResultBox').classList.add('show');
+    document.getElementById('vigKeyClean').textContent = data.key;
+    document.getElementById('vigKeyDisplay').style.display = 'block';
+
+    const tbody = document.getElementById('vigStepsBody');
+    tbody.innerHTML = '';
+    data.steps.forEach((s, i) => {
+      const valKey = mode === 'encrypt' ? 'p_val' : 'c_val';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="row-num">${i+1}</span></td>
+        <td class="mono accent">${s.char}</td>
+        <td class="mono" style="color:var(--accent-5)">${s.key_char}</td>
+        <td class="mono">${s[valKey]}</td>
+        <td class="mono">${s.k_val}</td>
+        <td class="mono" style="color:var(--text-2)">${s.formula}</td>
+        <td class="mono success">${s.result}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('vigSteps').classList.add('show');
+    animateRows('vigStepsBody');
+  }
+
+  function clearVig() {
+    document.getElementById('vigText').value = '';
+    document.getElementById('vigKey').value = '';
+    document.getElementById('vigResult').textContent = '—';
+    document.getElementById('vigResultBox').classList.remove('show');
+    document.getElementById('vigSteps').classList.remove('show');
+    document.getElementById('vigStepsBody').innerHTML = '';
+    document.getElementById('vigKeyDisplay').style.display = 'none';
+    hideError(document.getElementById('vigApp'));
+  }
+</script>
+{% endblock %}
