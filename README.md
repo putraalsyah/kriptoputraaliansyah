@@ -185,7 +185,7 @@ http://localhost:5000
 
 Aplikasi ini di-deploy dan dapat diakses secara publik di:
 
-> **https://kriptoputraaliansyah.my.id**
+> **https://www.kriptoputraaliansyah.my.id**
 
 ### Panduan Deploy ke Railway (Rekomendasi)
 
